@@ -73,7 +73,9 @@ def load_config():
             "lowes penny",
         ],
         "slickdeals_max_price": 5.00,
-        "alert_all_states": True,
+        "alert_all_states": False,
+        "min_states_nationwide": 8,
+        "store_name": "your store",
         "max_alerts_per_run": 15,
     }
     if CONFIG_PATH.exists():
@@ -320,13 +322,14 @@ def fmt_penny(it, cfg):
     where = ", ".join(f"{k}{v}" for k, v in sorted(it["states"].items(), key=lambda x: -x[1])[:6])
     if it["more_states"]:
         where += f" +{it['more_states']} more"
-    flag = "IN YOUR STATE " if home else ""
+    flag = "FL FIND " if home else "NATIONWIDE "
     orig = f" (was ${it['orig_price']:.2f})" if it["orig_price"] else ""
     title = f"{flag}HD penny: {it['name'][:60]}"
+    store = cfg.get("store_name", "your store")
     body = (f"SKU {it['sku']}{orig}\n"
             f"Reported: {where or 'n/a'}\n"
             f"Last seen: {it['last_seen'] or 'n/a'}\n"
-            f"Tap to check your store's stock.")
+            f"Check {store}. Tap to see stock.")
     return title, body, ("high" if home else "default")
 
 
@@ -353,13 +356,19 @@ def main():
     for it in items:
         prev = seen["penny"].get(it["sku"])
         home_now = any(s in cfg["home_states"] for s in it["states"])
-        is_new = prev is None
-        newly_home = prev is not None and home_now and not prev.get("home")
+        total_states = len(it["states"]) + it["more_states"]
+        # Qualifies for YOUR store if reported in your state, or reported so widely
+        # (nationwide markdown) that your store very likely has the same SKU pennied.
+        qualifies = (cfg["alert_all_states"] or home_now
+                     or total_states >= cfg.get("min_states_nationwide", 8))
         if it["orig_price"] is not None and it["orig_price"] < cfg["min_original_price"]:
-            continue
-        if (is_new or newly_home) and (cfg["alert_all_states"] or home_now):
+            qualifies = False
+        is_new = prev is None
+        newly_qualifies = prev is not None and qualifies and not prev.get("q")
+        newly_home = prev is not None and home_now and not prev.get("home")
+        if qualifies and (is_new or newly_qualifies or newly_home):
             alerts.append(("penny", score_penny(it, cfg), it))
-        seen["penny"][it["sku"]] = {"t": now, "home": home_now, "name": it["name"][:80]}
+        seen["penny"][it["sku"]] = {"t": now, "home": home_now, "q": qualifies, "name": it["name"][:80]}
 
     # 2) Slickdeals (Lowe's + Home Depot)
     for d in get_slickdeals(cfg, args.debug):

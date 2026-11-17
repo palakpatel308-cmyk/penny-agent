@@ -26,6 +26,9 @@ Each Home Depot alert opens `homedepot.com/s/<SKU>` so you can check your local 
 
 ## Tweak it (`config.json`)
 
+- `store_name`: shown in each alert. Set to Ft Myers East #8444.
+- `min_states_nationwide`: also alert when an item is reported in this many states or more (likely pennied everywhere, including your store). Default `8`.
+- `slickdeals_queries`: empty = off. Add `"lowes clearance"` to get national Lowe's posts back.
 - `home_states`: states that get high-priority alerts. Default `["FL"]`.
 - `nearby_states`: ranked second.
 - `alert_all_states`: `false` = only alert when your state reports it.
