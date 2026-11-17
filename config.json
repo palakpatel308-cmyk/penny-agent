@@ -1,0 +1,14 @@
+{
+  "home_states": ["FL"],
+  "nearby_states": ["GA", "AL"],
+  "min_original_price": 0,
+  "alert_all_states": true,
+  "max_alerts_per_run": 15,
+  "slickdeals_queries": [
+    "lowes clearance",
+    "home depot clearance",
+    "home depot penny",
+    "lowes penny"
+  ],
+  "slickdeals_max_price": 5.00
+}
