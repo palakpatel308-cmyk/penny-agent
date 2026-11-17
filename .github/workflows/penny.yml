@@ -2,8 +2,9 @@ name: Penny Agent
 
 on:
   schedule:
+    # Every 3 hours. GitHub cron is UTC and can run a few minutes late.
     - cron: "17 */3 * * *"
-  workflow_dispatch:
+  workflow_dispatch: {}   # lets you tap "Run workflow" by hand
 
 permissions:
   contents: write
@@ -13,7 +14,7 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  run:
+  hunt:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -24,20 +25,18 @@ jobs:
           python-version: "3.12"
           cache: pip
 
-      - name: Install dependencies
-        run: pip install -r requirements.txt
+      - run: pip install -r requirements.txt
 
       - name: Run agent
         env:
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          HOME_STATES: ${{ vars.HOME_STATES }}
         run: python penny_agent.py
 
-      - name: Save seen list
+      - name: Save memory of what was already sent
         run: |
-          if [ -f seen.json ]; then
-            git config user.name "penny-agent"
-            git config user.email "penny-agent@users.noreply.github.com"
-            git add seen.json
-            git diff --cached --quiet || git commit -m "Update seen items [skip ci]"
-            git push
-          fi
+          git config user.name "penny-agent"
+          git config user.email "penny-agent@users.noreply.github.com"
+          git add seen.json
+          git diff --cached --quiet || git commit -m "update seen items"
+          git push
